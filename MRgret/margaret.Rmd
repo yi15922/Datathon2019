@@ -118,7 +118,10 @@ spec %>%
   group_by(topic_name) %>%
   drop_na() %>%
  summarize(meanInt = mean(num_interests)) %>%
-  arrange(desc(meanInt))
+  arrange(desc(meanInt)) %>%
+  ggplot(aes(x = reorder(topic_name,-meanInt), meanInt)) +
+  geom_bar(stat ="identity") +
+  coord_flip()
 ```
 
 
@@ -182,7 +185,7 @@ spec %>%
 ```
 
 
-```{r num-interests}
+```{r num-interests1}
 spec_nums <- spec %>%
   group_by(userID) %>%
   count(userID)
@@ -203,11 +206,19 @@ spec %>%
   summarize(mean(num_interests))
 ```
 
-```{r scatter-plot}
+```{r scatter-plot, cache = TRUE}
 spec %>%
   ggplot(mapping = aes(x = totLti, y = totSti, color = topic_name)) +
   geom_smooth(method=lm, se = FALSE) +
+  theme(legend.position = "none") +
   theme_minimal()
+
+spec %>%
+  ggplot(mapping = aes(x = totLti, y = totSti, color = topic_name)) +
+  geom_point() +
+  facet_wrap(~ topic_name) +
+  theme_minimal() +
+  theme(legend.position = "none")
 ```
 
 
