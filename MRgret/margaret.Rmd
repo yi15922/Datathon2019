@@ -160,7 +160,7 @@ spec_true %>%
   
 ```
 
-```{r sum-interest}
+```{r sum-interest, cache = TRUE}
 spec %>%
   group_by(topic_name) %>%
   summarize(n = sum(totLti)) %>%
@@ -175,7 +175,8 @@ spec %>%
   arrange(desc(n)) %>%
   ggplot(aes(x = reorder(topic_name,-n), n)) +
   geom_bar(stat ="identity") +
-  coord_flip()
+  coord_flip() +
+  labs(x = "Topic Catagory", y = "Average Interest Score (lt)", title = "for all entries")
 
 spec %>%
   filter(inAudience == TRUE) %>%
@@ -193,7 +194,8 @@ spec %>%
   arrange(desc(n)) %>%
   ggplot(aes(x = reorder(topic_name,-n), n)) +
   geom_bar(stat ="identity") +
-  coord_flip()
+  coord_flip() +
+  labs(x = "Topic Catagory", y = "Average Interest Score (lt)", title = "for entries who have converted in the past")
 ```
 
 
