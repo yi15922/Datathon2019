@@ -1,0 +1,59 @@
+---
+title: "Data Exploration"
+author: Margaret Reed, Yi Chen, Caroline Maloney, Evelyn Cupil-Garcia
+date: Nov 2, 2019
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(broom)
+library(tidyverse)
+library(knitr)
+library(ggplot2)
+```
+
+
+```{r read-data, cache=TRUE, include=FALSE}
+training = read_csv("../data/training_tallskinny.csv")
+validation = read_csv("../data/validation_tallskinny.csv")
+interest_topics = read_csv("../data/interest_topics.csv")
+```
+
+
+
+```{r first}
+training %>%
+  names()
+
+interest_topics %>%
+  names()
+
+user1 <- training %>%
+  filter(userID == 1) 
+
+
+user1Interest <- full_join(user1, interest_topics)
+user1Interest$userID <- 1
+user1Interest <- user1Interest %>%
+  mutate_all(~replace(., is.na(.), 0))
+
+joined <- full_join(training, interest_topics)
+
+joined %>%
+  group_by(topic_name) %>%
+  count(inAudience) %>%
+  filter(inAudience == TRUE) 
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
