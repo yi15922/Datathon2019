@@ -90,6 +90,9 @@ ggplot(both, mapping = aes(x = reorder(topic_name, rate), y = rate)) +
   scale_x_discrete(waiver(), labels = rev(xlabs)) + 
   theme_minimal()
 
+
+
+
 ```
 
 
@@ -110,8 +113,6 @@ joined %>%
   theme_minimal()
 ```
 
-
-
 ```{r score_average}
 joined %>%
   drop_na() %>%
@@ -128,6 +129,27 @@ joined %>%
        y = "Average interest score per user") + 
   theme_minimal()
 ```
+
+
+## Short Term Interest Analysis
+
+```{r stl_average}
+
+joined %>%
+  drop_na() %>%
+  group_by(topic_name) %>%
+  summarise(average = mean(stiFeatures)) %>%
+  arrange(desc(average))
+
+```
+
+```{r}
+
+
+
+```
+
+We can see that the Jobs & Education category has been getting increasing attention over the past month.
 
 
 

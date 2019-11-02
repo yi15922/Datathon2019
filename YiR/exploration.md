@@ -128,4 +128,27 @@ joined %>%
 
 ![](exploration_files/figure-gfm/score_average-1.png)<!-- -->
 
-\`\`\`
+## Short Term Interest Analysis
+
+``` r
+joined %>%
+  drop_na() %>%
+  group_by(topic_name) %>%
+  summarise(average = mean(stiFeatures)) %>%
+  arrange(desc(average))
+```
+
+    ## # A tibble: 1,385 x 2
+    ##    topic_name                                                       average
+    ##    <chr>                                                              <dbl>
+    ##  1 /Jobs & Education/Education/Alumni & Reunions                      0.722
+    ##  2 /Arts & Entertainment/Performing Arts/Circus                       0.470
+    ##  3 /Jobs & Education/Education/Colleges & Universities/Fraternitie…   0.399
+    ##  4 /Shopping/Apparel/Clothing Accessories/Gems & Jewelry/Rings        0.387
+    ##  5 /Online Communities/Feed Aggregation & Social Bookmarking          0.370
+    ##  6 /Sports/Sporting Goods/American Football Equipment                 0.368
+    ##  7 /Online Communities/Blogging Resources & Services                  0.368
+    ##  8 /Arts & Entertainment/Fun & Trivia/Fun Tests & Silly Surveys       0.365
+    ##  9 /Computers & Electronics/Programming/Java (Programming Language)   0.303
+    ## 10 /Autos & Vehicles/Vehicle Codes & Driving Laws/Vehicle Licensin…   0.302
+    ## # … with 1,375 more rows
