@@ -16,9 +16,9 @@ library(ggplot2)
 
 
 ```{r read-data, cache=TRUE, include=FALSE}
-training = read_csv("../data/training_tallskinny.csv")
-validation = read_csv("../data/validation_tallskinny.csv")
-interest_topics = read_csv("../data/interest_topics.csv")
+training = read_csv("../../data/training_tallskinny.csv")
+validation = read_csv("../../data/validation_tallskinny.csv")
+interest_topics = read_csv("../../data/interest_topics.csv")
 ```
 
 
