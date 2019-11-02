@@ -96,22 +96,105 @@ spec %>%
 ```
 
 ```{r grouping-sum, cache = TRUE}
-spec<- spec %>%
+spec <- spec %>%
   group_by(userID, topic_name, inAudience) %>%
   drop_na() %>%
  summarize(totLti = sum(ltiFeatures))
 ```
 
 
+```{r num-interests, cache = TRUE}
+spec_nums <- spec %>%
+  group_by(userID) %>%
+  count(userID)
+names(spec_nums)[2] <- "num_interests"
+spec_nums
+
+spec <- left_join(spec, spec_nums)
+spec %>%
+  group_by(topic_name) %>%
+  drop_na() %>%
+ summarize(meanInt = mean(num_interests)) %>%
+  arrange(desc(meanInt))
+```
+
+
 ```{r gathering-test, cache = TRUE}
-spec_gathered <- spec %>%
+spec_true <- spec %>%
   group_by(topic_name) %>%
   count(inAudience) %>%
   filter(inAudience == TRUE) %>%
+  select(topic_name, n)
+names(spec_true)[2] <- "True"
+
+spec_false <- spec %>%
+  group_by(topic_name) %>%
+  count(inAudience) %>%
+  filter(inAudience == FALSE) %>%
+  select(topic_name, n)
+names(spec_false)[2] <- "False"
+spec_gathered <- full_join(spec_true, spec_false)
+
+spec_prop <- spec_gathered %>%
+  mutate(prop = (True/(True + False))*100) %>%
+  arrange(desc(prop))
+
+spec_prop %>%
+  arrange(prop) %>%
+  ggplot(aes(x = reorder(topic_name,-prop), prop)) +
+  geom_bar(stat ="identity") +
+  coord_flip() +
+  labs(y = "Conversion Rate (%)", x ="Topic", title = "Conversion Rates by Topic")
+
+spec_true %>%
+  ggplot(aes(x = reorder(topic_name,-True), True)) +
+  geom_bar(stat ="identity") +
+  coord_flip() +
+  labs(y = "Number of users in audience", x ="Topic", title = "Audience nums by Topic")
+  
+```
+
+```{r sum-interest}
+spec %>%
+  group_by(topic_name) %>%
+  summarize(n = sum(totLti)) %>%
   arrange(desc(n))
-spec_gathered %>%
-  ggplot(aes(x = reorder(topic_name,-n), n)) +
-  geom_bar(stat ="identity")
+
+spec %>%
+  group_by(topic_name) %>%
+  summarize(n = mean(totLti)) %>%
+  arrange(desc(n))
+
+spec %>%
+  filter(inAudience == TRUE) %>%
+  group_by(topic_name) %>%
+  summarize(n = sum(totLti)) %>%
+  arrange(desc(n))
+
+spec %>%
+  filter(inAudience == TRUE) %>%
+  group_by(topic_name) %>%
+  summarize(n = mean(totLti)) %>%
+  arrange(desc(n))
+```
+
+
+```{r num-interests}
+spec_nums <- spec %>%
+  group_by(userID) %>%
+  count(userID)
+names(spec_nums)[2] <- "num_interests"
+spec_nums
+
+spec <- left_join(spec, spec_nums)
+spec %>%
+  group_by(topic_name) %>%
+  drop_na() %>%
+ summarize(meanInt = mean(num_interests)) %>%
+  arrange(desc(meanInt))
+```
+
+```{r true-num-ints}
 
 ```
 
