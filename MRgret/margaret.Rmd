@@ -164,24 +164,36 @@ spec_true %>%
 spec %>%
   group_by(topic_name) %>%
   summarize(n = sum(totLti)) %>%
-  arrange(desc(n))
+  arrange(desc(n)) %>%
+  ggplot(aes(x = reorder(topic_name,-n), n)) +
+  geom_bar(stat ="identity") +
+  coord_flip()
 
 spec %>%
   group_by(topic_name) %>%
   summarize(n = mean(totLti)) %>%
-  arrange(desc(n))
+  arrange(desc(n)) %>%
+  ggplot(aes(x = reorder(topic_name,-n), n)) +
+  geom_bar(stat ="identity") +
+  coord_flip()
 
 spec %>%
   filter(inAudience == TRUE) %>%
   group_by(topic_name) %>%
   summarize(n = sum(totLti)) %>%
-  arrange(desc(n))
+  arrange(desc(n)) %>%
+  ggplot(aes(x = reorder(topic_name,-n), n)) +
+  geom_bar(stat ="identity") +
+  coord_flip()
 
 spec %>%
   filter(inAudience == TRUE) %>%
   group_by(topic_name) %>%
   summarize(n = mean(totLti)) %>%
-  arrange(desc(n))
+  arrange(desc(n)) %>%
+  ggplot(aes(x = reorder(topic_name,-n), n)) +
+  geom_bar(stat ="identity") +
+  coord_flip()
 ```
 
 
