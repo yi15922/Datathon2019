@@ -3,6 +3,8 @@ Data Exploration
 Margaret Reed, Yi Chen, Caroline Maloney, Evelyn Cupil-Garcia
 Nov 2, 2019
 
+## Adding a column of topic names to the dataframe
+
 ``` r
 training %>%
   names()
@@ -37,34 +39,93 @@ joined <- full_join(training, interest_topics)
 
     ## Joining, by = "topic_id"
 
+## Plotting conversion rates against topic names
+
 ``` r
-joined %>%
+notConverted <- joined %>%
   group_by(topic_name) %>%
   count(inAudience) %>%
-  filter(inAudience == TRUE) 
+  filter(inAudience == FALSE) %>% 
+  select(topic_name, n)
+
+converted <- joined %>%
+  group_by(topic_name) %>%
+  count(inAudience) %>%
+  filter(inAudience == TRUE) %>%
+  select(topic_name, n)
+
+
+names(notConverted)[2] <- "false"
+names(converted)[2] <- "true"
+
+both <- full_join(notConverted, converted)
 ```
 
-    ## # A tibble: 1,393 x 3
-    ## # Groups:   topic_name [1,393]
-    ##    topic_name                                              inAudience     n
-    ##    <chr>                                                   <lgl>      <int>
-    ##  1 /Arts & Entertainment                                   TRUE         923
-    ##  2 /Arts & Entertainment/Celebrities & Entertainment News  TRUE        1185
-    ##  3 /Arts & Entertainment/Comics & Animation                TRUE          75
-    ##  4 /Arts & Entertainment/Comics & Animation/Anime & Manga  TRUE         167
-    ##  5 /Arts & Entertainment/Comics & Animation/Cartoons       TRUE         183
-    ##  6 /Arts & Entertainment/Comics & Animation/Comics         TRUE         279
-    ##  7 /Arts & Entertainment/Entertainment Industry            TRUE         154
-    ##  8 /Arts & Entertainment/Entertainment Industry/Film & TV… TRUE         148
-    ##  9 /Arts & Entertainment/Entertainment Industry/Film & TV… TRUE         102
-    ## 10 /Arts & Entertainment/Entertainment Industry/Film & TV… TRUE          85
-    ## # … with 1,383 more rows
+    ## Joining, by = "topic_name"
 
-## Including Plots
+``` r
+both <- both %>%
+  ungroup() %>%
+  mutate(rate = true/(true + false))
 
-You can also embed plots, for example:
+both <- both %>%
+  arrange(desc(rate)) %>%
+  select(topic_name, rate) %>%
+  slice(1:20) %>%
+  arrange(desc(rate))
 
-![](exploration_files/figure-gfm/pressure-1.png)<!-- -->
+xlabs <- c("Symbian OS", "SEAT", "Kia", "Honda", "Hyundai", "Mazda", "Mitsubishi", "Nissan", 
+           "Socially Responsible Investing", "Lincoln", "Subaru", "Buick", "Toyota", "Microcars & Subcompacts", 
+           "Ink & Toner", "Cricket Equipment", "Acura", "Vehicle Shopping", "SUVs & Crossovers", "Retailers")
 
-Note that the `echo = FALSE` parameter was added to the code chunk to
-prevent printing of the R code that generated the plot.
+ggplot(both, mapping = aes(x = reorder(topic_name, rate), y = rate)) +
+  geom_col() +
+  coord_flip() + 
+  labs(x = "Topic", 
+       y= "Conversion Rate", 
+       title = "Conversion rates by Subtopic") +
+  scale_x_discrete(waiver(), labels = rev(xlabs)) + 
+  theme_minimal()
+```
+
+![](exploration_files/figure-gfm/conversion-rate-1.png)<!-- -->
+
+``` r
+joined %>%
+  drop_na() %>%
+  group_by(topic_name) %>%
+  summarise(sum = sum(ltiFeatures)) %>%
+  arrange(desc(sum)) %>%
+  ungroup()%>%
+  slice(1:20) %>%
+  ggplot(mapping = aes(x = reorder(topic_name, sum), y = sum)) +
+    geom_col() + 
+  coord_flip() + 
+  labs(title = "Total Interest Scores for the Top 20 Topics", 
+       x = "Topic", 
+       y = "Total interest score") + 
+  theme_minimal()
+```
+
+![](exploration_files/figure-gfm/score_totals-1.png)<!-- -->
+
+``` r
+joined %>%
+  drop_na() %>%
+  group_by(topic_name) %>%
+  summarise(average = mean(ltiFeatures)) %>%
+  arrange(desc(average)) %>%
+  ungroup()%>%
+  slice(1:20) %>%
+  ggplot(mapping = aes(x = reorder(topic_name, average), y = average)) +
+  geom_col() + 
+  coord_flip() + 
+  labs(title = "Average Interest Scores Per User for the Top 20 Topics", 
+       x = "Topic", 
+       y = "Average interest score per user") + 
+  theme_minimal()
+```
+
+![](exploration_files/figure-gfm/score_average-1.png)<!-- -->
+
+\`\`\`
