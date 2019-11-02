@@ -1,0 +1,119 @@
+---
+title: "Margaret's markdown"
+output:
+ html_document:
+   df_print: paged
+---
+```{r libraries}
+library(tidyverse)
+library(dplyr)
+library(broom)
+library(ggplot2)
+library(stringr)
+library(readr)
+library(knitr)
+
+```
+
+```{r load-data, cache= TRUE}
+training = read_csv("../../data/training_tallskinny.csv")
+validation = read_csv("../../data/validation_tallskinny.csv")
+interest_topics = read_csv("../../data/interest_topics.csv")
+
+```
+
+
+```{r small-sets}
+
+training_small <- training %>%
+  slice(1:1000)
+training_small
+
+validation_small <- validation %>%
+  slice(1:1000)
+validation_small
+```
+
+
+```{r join}
+topics_training <- left_join(training, interest_topics) %>%
+  select(userID, inAudience, topic_name, everything())
+
+topics_training_small <- left_join(training_small, interest_topics) %>%
+  select(userID, inAudience, topic_name, everything())
+```
+
+```{r initial-graph}
+true_training <- topics_training %>%
+  group_by(topic_name) %>%
+  count(inAudience) %>%
+  filter(inAudience == TRUE) %>%
+  arrange(desc(n)) %>%
+  drop_na()
+true_training %>%
+  ggplot(aes(x = reorder(topic_name,-n), n)) +
+  geom_bar(stat ="identity")
+```
+
+```{r catagorizing, cache = TRUE}
+spec <- topics_training %>%
+  mutate(topic_name = case_when(
+    str_detect(topic_name, "/Arts & Entertainment") ~ "Arts & Entertainment",
+    str_detect(topic_name, "/Autos & Vehicles") ~ "Autos & Vehicles",
+    str_detect(topic_name, "/Beauty & Fitness") ~ "Beauty & Fitness",
+    str_detect(topic_name, "/Books & Literature") ~ "Books & Literature",
+    str_detect(topic_name, "/Business & Industrial") ~ "Business & Industrial",
+    str_detect(topic_name, "/Computers & Electronics") ~ "Computers & Electronics",
+    str_detect(topic_name, "/Finance") ~ "Finance",
+    str_detect(topic_name, "/Food & Drink") ~ "Food & Drink",
+    str_detect(topic_name, "/Games") ~ "Games",
+    str_detect(topic_name, "/Health") ~ "Health",
+    str_detect(topic_name, "/Hobbies & Leisure") ~ "Hobbies & Leisure",
+    str_detect(topic_name, "/Home & Garden") ~ "Home & Garden",
+    str_detect(topic_name, "/Internet & Telecom") ~ "Internet & Telecom",
+    str_detect(topic_name, "/Jobs & Education") ~ "Jobs & Education",
+    str_detect(topic_name, "/Law & Government") ~ "Law & Government",
+    str_detect(topic_name, "/News") ~ "News",
+    str_detect(topic_name, "/Online Communities") ~ "Online Communities",
+    str_detect(topic_name, "/People & Society") ~ "People & Society",
+    str_detect(topic_name, "/Pets & Animals") ~ "Pets & Animals",
+    str_detect(topic_name, "/Real Estate") ~ "Real Estate",
+    str_detect(topic_name, "/Reference") ~ "Reference",
+    str_detect(topic_name, "/Science") ~ "Science",
+    str_detect(topic_name, "/Shopping") ~ "Shopping",
+    str_detect(topic_name, "/Sports") ~ "Sports",
+    str_detect(topic_name, "/Travel") ~ "Travel",
+    TRUE ~ as.character(topic_name)
+  ))
+```
+
+
+```{r user-sums}
+spec %>%
+  group_by(userID) %>%
+  summarize(sumLt = sum(ltiFeatures)) %>%
+  arrange(desc(sumLt))
+```
+
+```{r grouping-sum, cache = TRUE}
+spec<- spec %>%
+  group_by(userID, topic_name, inAudience) %>%
+  drop_na() %>%
+ summarize(totLti = sum(ltiFeatures))
+```
+
+
+```{r gathering-test, cache = TRUE}
+spec_gathered <- spec %>%
+  group_by(topic_name) %>%
+  count(inAudience) %>%
+  filter(inAudience == TRUE) %>%
+  arrange(desc(n))
+spec_gathered %>%
+  ggplot(aes(x = reorder(topic_name,-n), n)) +
+  geom_bar(stat ="identity")
+
+```
+
+
+
