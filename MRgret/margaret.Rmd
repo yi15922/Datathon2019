@@ -52,11 +52,12 @@ true_training <- topics_training %>%
   drop_na()
 true_training %>%
   ggplot(aes(x = reorder(topic_name,-n), n)) +
-  geom_bar(stat ="identity")
+  geom_bar(stat ="identity") +
+   theme_void()
 ```
 
 ```{r catagorizing, cache = TRUE}
-spec <- topics_training %>%
+specL <- topics_training %>%
   mutate(topic_name = case_when(
     str_detect(topic_name, "/Arts & Entertainment") ~ "Arts & Entertainment",
     str_detect(topic_name, "/Autos & Vehicles") ~ "Autos & Vehicles",
@@ -89,17 +90,19 @@ spec <- topics_training %>%
 
 
 ```{r user-sums}
-spec %>%
+specL %>%
   group_by(userID) %>%
   summarize(sumLt = sum(ltiFeatures)) %>%
   arrange(desc(sumLt))
 ```
 
 ```{r grouping-sum, cache = TRUE}
-spec <- spec %>%
+spec <- specL %>%
   group_by(userID, topic_name, inAudience) %>%
   drop_na() %>%
- summarize(totLti = sum(ltiFeatures))
+ summarize(totLti = sum(ltiFeatures),
+           totSti = sum(stiFeatures))
+
 ```
 
 
@@ -195,7 +198,16 @@ spec %>%
 ```
 
 ```{r true-num-ints}
+spec %>%
+  group_by(inAudience) %>%
+  summarize(mean(num_interests))
+```
 
+```{r scatter-plot}
+spec %>%
+  ggplot(mapping = aes(x = totLti, y = totSti, color = topic_name)) +
+  geom_smooth(method=lm, se = FALSE) +
+  theme_minimal()
 ```
 
 
