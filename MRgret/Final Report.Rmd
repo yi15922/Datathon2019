@@ -1,0 +1,325 @@
+---
+title: "Final Report"
+output: html_document
+---
+
+## INTRODUCTION
+How Does Consumer Browsing by Topic Translate to Their Conversion Potential?
+
+Valassis is interested in improving marketing technology and consumer engagement through analysis and applications of consumer browsing behavior. With only limited funding for marketing, it is important to be able to predict and target which consumers are more likely to convert (to click on an advertisement and perform a meaningful action). To design a predictive model, analysis of the consumer data focused on identifying associations between a user’s likelihood to convert and their short-term and long-term browsing interests by topic. 
+
+
+## Analysis
+
+```{r libraries, include = FALSE}
+library(tidyverse)
+library(dplyr)
+library(broom)
+library(ggplot2)
+library(stringr)
+library(readr)
+library(knitr)
+
+```
+
+```{r load-data, cache= TRUE}
+training = read_csv("../../data/training_tallskinny.csv")
+validation = read_csv("../../data/validation_tallskinny.csv")
+interest_topics = read_csv("../../data/interest_topics.csv")
+
+```
+***a note: we only used the training set, for the arbitrary reason that it was larger.
+
+```{r small-sets, include = FALSE}
+
+training_small <- training %>%
+  slice(1:1000)
+training_small
+
+validation_small <- validation %>%
+  slice(1:1000)
+validation_small
+topics_training_small <- left_join(training_small, interest_topics) %>%
+  select(userID, inAudience, topic_name, everything())
+```
+
+
+```{r join}
+topics_training <- left_join(training, interest_topics) %>%
+  select(userID, inAudience, topic_name, everything())
+```
+
+## Initial Graph
+```{r initial-graph}
+true_training <- topics_training %>%
+  group_by(topic_name) %>%
+  count(inAudience) %>%
+  filter(inAudience == TRUE) %>%
+  arrange(desc(n)) %>%
+  drop_na()
+true_training %>%
+  ggplot(aes(x = reorder(topic_name,-n), n)) +
+  geom_bar(stat ="identity") +
+   theme_void()
+```
+This is a distribution of the frequencies of all the sub catagories in the training dataset. It does not tell us a lot of information so we need to look further into our data!
+
+## Removing Subcatagories
+```{r catagorizing, cache = TRUE}
+specL <- topics_training %>%
+  mutate(topic_name = case_when(
+    str_detect(topic_name, "/Arts & Entertainment") ~ "Arts & Entertainment",
+    str_detect(topic_name, "/Autos & Vehicles") ~ "Autos & Vehicles",
+    str_detect(topic_name, "/Beauty & Fitness") ~ "Beauty & Fitness",
+    str_detect(topic_name, "/Books & Literature") ~ "Books & Literature",
+    str_detect(topic_name, "/Business & Industrial") ~ "Business & Industrial",
+    str_detect(topic_name, "/Computers & Electronics") ~ "Computers & Electronics",
+    str_detect(topic_name, "/Finance") ~ "Finance",
+    str_detect(topic_name, "/Food & Drink") ~ "Food & Drink",
+    str_detect(topic_name, "/Games") ~ "Games",
+    str_detect(topic_name, "/Health") ~ "Health",
+    str_detect(topic_name, "/Hobbies & Leisure") ~ "Hobbies & Leisure",
+    str_detect(topic_name, "/Home & Garden") ~ "Home & Garden",
+    str_detect(topic_name, "/Internet & Telecom") ~ "Internet & Telecom",
+    str_detect(topic_name, "/Jobs & Education") ~ "Jobs & Education",
+    str_detect(topic_name, "/Law & Government") ~ "Law & Government",
+    str_detect(topic_name, "/News") ~ "News",
+    str_detect(topic_name, "/Online Communities") ~ "Online Communities",
+    str_detect(topic_name, "/People & Society") ~ "People & Society",
+    str_detect(topic_name, "/Pets & Animals") ~ "Pets & Animals",
+    str_detect(topic_name, "/Real Estate") ~ "Real Estate",
+    str_detect(topic_name, "/Reference") ~ "Reference",
+    str_detect(topic_name, "/Science") ~ "Science",
+    str_detect(topic_name, "/Shopping") ~ "Shopping",
+    str_detect(topic_name, "/Sports") ~ "Sports",
+    str_detect(topic_name, "/Travel") ~ "Travel",
+    TRUE ~ as.character(topic_name)
+  ))
+```
+
+
+```{r user-sums, include = FALSE}
+specL %>%
+  group_by(userID) %>%
+  summarize(sumLt = sum(ltiFeatures)) %>%
+  arrange(desc(sumLt))
+```
+
+```{r grouping-sum, cache = TRUE}
+spec <- specL %>%
+  group_by(userID, topic_name, inAudience) %>%
+  drop_na() %>%
+ summarize(totLti = sum(ltiFeatures),
+           totSti = sum(stiFeatures))
+
+```
+
+
+```{r num-interests, cache = TRUE, include = FALSE}
+spec_nums <- spec %>%
+  group_by(userID) %>%
+  count(userID)
+names(spec_nums)[2] <- "num_interests"
+spec_nums
+
+spec <- left_join(spec, spec_nums)
+spec %>%
+  group_by(topic_name) %>%
+  drop_na() %>%
+ summarize(meanInt = mean(num_interests)) %>%
+  arrange(desc(meanInt)) %>%
+  ggplot(aes(x = reorder(topic_name,-meanInt), meanInt)) +
+  geom_bar(stat ="identity") +
+  coord_flip()
+```
+
+## graphing conversion rate proportions
+```{r gathering-test, cache = TRUE}
+spec_true <- spec %>%
+  group_by(topic_name) %>%
+  count(inAudience) %>%
+  filter(inAudience == TRUE) %>%
+  select(topic_name, n)
+names(spec_true)[2] <- "True"
+
+spec_false <- spec %>%
+  group_by(topic_name) %>%
+  count(inAudience) %>%
+  filter(inAudience == FALSE) %>%
+  select(topic_name, n)
+names(spec_false)[2] <- "False"
+spec_gathered <- full_join(spec_true, spec_false)
+
+spec_prop <- spec_gathered %>%
+  mutate(prop = (True/(True + False))*100) %>%
+  arrange(desc(prop))
+
+spec_prop %>%
+  arrange(prop) %>%
+  ggplot(aes(x = reorder(topic_name,-prop), prop)) +
+  geom_bar(stat ="identity") +
+  coord_flip() +
+  labs(y = "Conversion Rate (%)", x ="Topic", title = "Conversion Rates by Topic")
+
+spec_true %>%
+  ggplot(aes(x = reorder(topic_name,-True), True)) +
+  geom_bar(stat ="identity") +
+  coord_flip() +
+  labs(y = "Number of users in audience", x ="Topic", title = "Audience nums by Topic")
+  
+```
+A distinction we decided to make was between the more popular topics of interest, ie the numbers of users who had the topic as a value of interest, and those that were associated with the conversion rate.
+
+*** a note: what we call the ‘conversion rate’ is simply the ratio between the number of users who were interested in the particular topic and were converted in the past, and the total number of those who were interested in the particular topic. 
+
+Interestingly enough, Arts and Entertainment, News, and Reference were much more popular, but categories like Auto and Vehicles, Real Estate, and Finance, had a higher conversion rate. This could be for a variety of reasons. One possibility is that the topics with the highest conversion rates tend to relate to necessities and are only browsed by users when they have a high motivation to make a purchase. Real Estate, for instance, has a low browsing popularity overall, but it has a very high conversion rate amongst its smaller pool of users. Individuals may only browse for real estate when they are in need of housing, a basic necessity, and therefore have a very high motivation to make a purchase or significant action with respect to advertisements. Arts & Entertainment, on the other hand, ranks the highest in browsing popularity, but it has the fifth lowest conversion rate. Many individuals may be inclined to browse about Arts & Entertainment, but it is not a necessity and individuals may have a substantially lower motivation to convert as a result.
+
+
+## Adding a column of topic names to the dataframe
+
+```{r addTopics}
+training %>%
+  names()
+
+interest_topics %>%
+  names()
+
+user1 <- training %>%
+  filter(userID == 1) 
+
+
+user1Interest <- full_join(user1, interest_topics)
+user1Interest$userID <- 1
+user1Interest <- user1Interest %>%
+  mutate_all(~replace(., is.na(.), 0))
+
+joined <- full_join(training, interest_topics)
+```
+
+
+## Plotting conversion rates against topic names
+
+```{r conversion-rate, fig.height=5, fig.width=7}
+notConverted <- joined %>%
+  group_by(topic_name) %>%
+  count(inAudience) %>%
+  filter(inAudience == FALSE) %>% 
+  select(topic_name, n)
+
+converted <- joined %>%
+  group_by(topic_name) %>%
+  count(inAudience) %>%
+  filter(inAudience == TRUE) %>%
+  select(topic_name, n)
+
+
+names(notConverted)[2] <- "false"
+names(converted)[2] <- "true"
+
+both <- full_join(notConverted, converted)
+
+
+both <- both %>%
+  ungroup() %>%
+  mutate(rate = true/(true + false))
+
+both %>%
+  arrange(desc(rate)) %>%
+  select(topic_name, rate) %>%
+  slice(1:20) %>%
+  arrange(desc(rate))
+
+```
+
+We also wanted to look at the subtopics’s conversion rates, and we found that the subtopic with the highest proportion of converted entries was Symbian OS, nested inside the Computers and Electronics topic. Interestingly, Symbian is a discontinued operating system.
+
+## looking at average score
+```{r sum-interest, cache = TRUE}
+spec %>%
+  group_by(topic_name) %>%
+  summarize(n = mean(totLti)) %>%
+  arrange(desc(n)) %>%
+  ggplot(aes(x = reorder(topic_name,-n), n)) +
+  geom_bar(stat ="identity") +
+  coord_flip() +
+  labs(x = "Topic Catagory", y = "Average Interest Score (lt)", title = "for all entries")
+
+spec %>%
+  filter(inAudience == TRUE) %>%
+  group_by(topic_name) %>%
+  summarize(n = mean(totLti)) %>%
+  arrange(desc(n)) %>%
+  ggplot(aes(x = reorder(topic_name,-n), n)) +
+  geom_bar(stat ="identity") +
+  coord_flip() +
+  labs(x = "Topic Catagory", y = "Average Interest Score (lt)", title = "for entries who have converted in the past")
+```
+
+
+```{r score_average}
+joined %>%
+  drop_na() %>%
+  group_by(topic_name) %>%
+  summarise(average = mean(ltiFeatures)) %>%
+  arrange(desc(average)) %>%
+  ungroup()%>%
+  slice(1:20)
+```
+
+We also calculated the average score for the interests of entries in each category. The first graph is for all entries, while the second one is filtered for folk who have converted in the past. Interestingly, the values are smaller in the filtered dataset than in the general dataset. This can be explained by the fact that there are significantly more data points in the general dataset than the one that is filtered. The most significant change between the two visualizations is that Autos and Vehicles have moved up significantly amongst the relative averages. This is consistent with our previous visualizations that showed that the conversion rate was highest for Autos and Vehicles.
+
+## looking at number of interests per user
+```{r num-interests1}
+spec_nums <- spec %>%
+  group_by(userID) %>%
+  count(userID)
+names(spec_nums)[2] <- "num_interests"
+spec_nums
+
+spec <- left_join(spec, spec_nums)
+spec %>%
+  group_by(topic_name) %>%
+  drop_na() %>%
+ summarize(meanInt = mean(num_interests)) %>%
+  arrange(desc(meanInt))
+```
+
+
+```{r true-num-ints}
+spec %>%
+  group_by(inAudience) %>%
+  summarize(mean(num_interests))
+```
+
+We decided to look a little into the effects of the number of interests individuals had on their likelihood to be converted. As you can see entries that had been converted had a higher average value for number of entries. (True in this case means they had been converted)
+
+## Short Term Interest Analysis
+
+```{r stl_average}
+
+joined %>%
+  drop_na() %>%
+  group_by(topic_name) %>%
+  summarise(average = mean(stiFeatures)) %>%
+  arrange(desc(average))
+
+```
+
+We can see that the Jobs & Education category has been getting increasing attention over the past month.
+
+```{r scatter-plot, cache = TRUE}
+spec %>%
+  ggplot(mapping = aes(x = totLti, y = totSti, color = topic_name)) +
+  geom_smooth(method=lm, se = FALSE) +
+  theme(legend.position = "none") +
+  theme_minimal()
+
+spec %>%
+  ggplot(mapping = aes(x = totLti, y = totSti, color = topic_name)) +
+  geom_point() +
+  facet_wrap(~ topic_name) +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+Here we examined the relationship between short-term and long-term user interest scores by topic. We found that Jobs & Education, Arts & Entertainment, and Pets & Animals showed the greatest positive associations between long and short-term user interest scores. An important note, though, is that the correlations for these topics could be overstated as the data is varied and outliers were factored into the trendlines shown above. An example of this is in the Jobs and Education graph (teal colored) as shown by its scatter plot. 

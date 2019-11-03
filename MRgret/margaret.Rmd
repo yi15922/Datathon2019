@@ -23,7 +23,7 @@ interest_topics = read_csv("../../data/interest_topics.csv")
 ```
 
 
-```{r small-sets}
+```{r small-sets, include = FALSE}
 
 training_small <- training %>%
   slice(1:1000)
@@ -32,14 +32,13 @@ training_small
 validation_small <- validation %>%
   slice(1:1000)
 validation_small
+topics_training_small <- left_join(training_small, interest_topics) %>%
+  select(userID, inAudience, topic_name, everything())
 ```
 
 
 ```{r join}
 topics_training <- left_join(training, interest_topics) %>%
-  select(userID, inAudience, topic_name, everything())
-
-topics_training_small <- left_join(training_small, interest_topics) %>%
   select(userID, inAudience, topic_name, everything())
 ```
 
@@ -89,7 +88,7 @@ specL <- topics_training %>%
 ```
 
 
-```{r user-sums}
+```{r user-sums, include = FALSE}
 specL %>%
   group_by(userID) %>%
   summarize(sumLt = sum(ltiFeatures)) %>%
@@ -106,7 +105,7 @@ spec <- specL %>%
 ```
 
 
-```{r num-interests, cache = TRUE}
+```{r num-interests, cache = TRUE, include = FALSE}
 spec_nums <- spec %>%
   group_by(userID) %>%
   count(userID)
@@ -163,29 +162,12 @@ spec_true %>%
 ```{r sum-interest, cache = TRUE}
 spec %>%
   group_by(topic_name) %>%
-  summarize(n = sum(totLti)) %>%
-  arrange(desc(n)) %>%
-  ggplot(aes(x = reorder(topic_name,-n), n)) +
-  geom_bar(stat ="identity") +
-  coord_flip()
-
-spec %>%
-  group_by(topic_name) %>%
   summarize(n = mean(totLti)) %>%
   arrange(desc(n)) %>%
   ggplot(aes(x = reorder(topic_name,-n), n)) +
   geom_bar(stat ="identity") +
   coord_flip() +
   labs(x = "Topic Catagory", y = "Average Interest Score (lt)", title = "for all entries")
-
-spec %>%
-  filter(inAudience == TRUE) %>%
-  group_by(topic_name) %>%
-  summarize(n = sum(totLti)) %>%
-  arrange(desc(n)) %>%
-  ggplot(aes(x = reorder(topic_name,-n), n)) +
-  geom_bar(stat ="identity") +
-  coord_flip()
 
 spec %>%
   filter(inAudience == TRUE) %>%
